@@ -1,4 +1,6 @@
-local M = {}
+local M = {
+  file_name = "go.mod",
+}
 
 M.setup = function()
   -- nothing
@@ -22,6 +24,13 @@ local process_payload = function(input)
 end
 
 M.check = function()
+  local buf_name = vim.api.nvim_buf_get_name(0)
+
+  -- check current file name
+  if M.file_name ~= string.match(buf_name, M.file_name .. "$") then
+    return
+  end
+
   local bufnr = vim.fn.bufnr()
   local namespace = vim.api.nvim_create_namespace("go-pkgs-check")
   local query_string = "(require_directive) @require_spec"

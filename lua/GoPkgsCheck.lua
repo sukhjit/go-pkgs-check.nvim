@@ -22,9 +22,6 @@ local process_payload = function(input)
 end
 
 M.check = function()
-  vim.print("")
-  vim.print("NEW START")
-
   local bufnr = vim.fn.bufnr()
   local namespace = vim.api.nvim_create_namespace("go-pkgs-check")
   local query_string = "(require_directive) @require_spec"

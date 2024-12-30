@@ -1,5 +1,7 @@
 local M = {
   file_name = "go.mod",
+  namespace = vim.api.nvim_create_namespace("go-pkgs-check"),
+  bufnr = vim.fn.bufnr(),
 }
 
 M.setup = function()
@@ -23,16 +25,17 @@ local process_payload = function(input)
   return string.sub(ver, 2, string.len(ver) - 1)
 end
 
-M.check = function()
+local isGoModFile = function()
   local buf_name = vim.api.nvim_buf_get_name(0)
 
-  -- check current file name
-  if M.file_name ~= string.match(buf_name, M.file_name .. "$") then
+  return M.file_name == string.match(buf_name, M.file_name .. "$")
+end
+
+M.check = function()
+  if isGoModFile() ~= true then
     return
   end
 
-  local bufnr = vim.fn.bufnr()
-  local namespace = vim.api.nvim_create_namespace("go-pkgs-check")
   local query_string = "(require_directive) @require_spec"
 
   local parser = require("nvim-treesitter.parsers").get_parser()
@@ -66,14 +69,14 @@ M.check = function()
           local final = process_payload(value)
 
           if final ~= "" then
-            vim.api.nvim_buf_set_extmark(bufnr, namespace, line_num, 0, {
+            vim.api.nvim_buf_set_extmark(M.bufnr, M.namespace, line_num, 0, {
               id = line_num,
               virt_text_pos = "eol",
               priority = 100,
               virt_text = { { "| new version available: " .. final, "WarningMsg" } },
             })
           else
-            vim.api.nvim_buf_del_extmark(bufnr, namespace, line_num)
+            vim.api.nvim_buf_del_extmark(M.bufnr, M.namespace, line_num)
           end
         end,
 
@@ -83,6 +86,14 @@ M.check = function()
       })
     end
   end
+end
+
+M.clear = function()
+  if isGoModFile() ~= true then
+    return
+  end
+
+  vim.api.nvim_buf_clear_namespace(M.bufnr, M.namespace, 0, -1)
 end
 
 return M

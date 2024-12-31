@@ -1,11 +1,12 @@
 local M = {
   file_name = "go.mod",
   namespace = vim.api.nvim_create_namespace("go-pkgs-check"),
-  bufnr = vim.fn.bufnr(),
 }
 
 M.setup = function()
   -- nothing
+  vim.cmd("command! GoPkgsCheckShow" .. " lua require('GoPkgsCheck').show()")
+  vim.cmd("command! GoPkgsCheckClear" .. " lua require('GoPkgsCheck').clear()")
 end
 
 local process_payload = function(input)
@@ -31,7 +32,7 @@ local isGoModFile = function()
   return M.file_name == string.match(buf_name, M.file_name .. "$")
 end
 
-M.check = function()
+M.show = function()
   if isGoModFile() ~= true then
     return
   end
@@ -53,6 +54,7 @@ M.check = function()
         return
       end
 
+      local bufnr = vim.fn.bufnr()
       local cmd_to_run = { "go", "list", "-m", "-u", "-mod=readonly", vim.treesitter.get_node_text(mod_path, 0) }
       local value = ""
       local ln, _ = req_spec:range()
@@ -69,14 +71,14 @@ M.check = function()
           local final = process_payload(value)
 
           if final ~= "" then
-            vim.api.nvim_buf_set_extmark(M.bufnr, M.namespace, line_num, 0, {
+            vim.api.nvim_buf_set_extmark(bufnr, M.namespace, line_num, 0, {
               id = line_num,
               virt_text_pos = "eol",
               priority = 100,
               virt_text = { { "| new version available: " .. final, "WarningMsg" } },
             })
           else
-            vim.api.nvim_buf_del_extmark(M.bufnr, M.namespace, line_num)
+            vim.api.nvim_buf_del_extmark(bufnr, M.namespace, line_num)
           end
         end,
 
@@ -93,7 +95,7 @@ M.clear = function()
     return
   end
 
-  vim.api.nvim_buf_clear_namespace(M.bufnr, M.namespace, 0, -1)
+  vim.api.nvim_buf_clear_namespace(vim.fn.bufnr(), M.namespace, 0, -1)
 end
 
 return M

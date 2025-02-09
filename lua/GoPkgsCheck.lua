@@ -7,6 +7,7 @@ M.setup = function()
   -- nothing
   vim.cmd("command! GoPkgsCheckShow" .. " lua require('GoPkgsCheck').show()")
   vim.cmd("command! GoPkgsCheckClear" .. " lua require('GoPkgsCheck').clear()")
+  vim.cmd("command! GoPkgsCheckUpdate" .. " lua require('GoPkgsCheck').update()")
 end
 
 local process_payload = function(input)
@@ -86,6 +87,53 @@ M.show = function()
           value = value .. table.concat(data)
         end,
       })
+    end
+  end
+end
+
+M.update = function()
+  if isGoModFile() ~= true then
+    return
+  end
+
+  local cur_line = vim.fn.getcurpos()[2]
+  if cur_line < 1 then
+    vim.print("Not valid module")
+    return
+  end
+
+  local node = require("nvim-treesitter.ts_utils").get_node_at_cursor()
+  for _, req_spec in pairs(node:named_children()) do
+    local mod_path = req_spec:named_child(0)
+    local ver = req_spec:named_child(1)
+
+    if mod_path == nil or ver == nil then
+      return
+    end
+
+    local mod_name = vim.treesitter.get_node_text(mod_path, 0)
+    local line_num, _ = req_spec:range()
+
+    if (line_num + 1) == cur_line then
+      local bufnr = vim.fn.bufnr()
+      local cmd_to_run = { "go", "get", "-u", "-v", mod_name }
+
+      vim.fn.jobstart(cmd_to_run, {
+        on_exit = function(_, exit_code)
+          if exit_code ~= 0 then
+            vim.print("Error running cmd: " .. cmd_to_run)
+            return
+          end
+
+          vim.api.nvim_buf_del_extmark(bufnr, M.namespace, line_num)
+        end,
+
+        on_stdout = function(_, _)
+          vim.print("Updated: " .. mod_name)
+        end,
+      })
+
+      vim.print("updating " .. mod_name .. " ...")
     end
   end
 end

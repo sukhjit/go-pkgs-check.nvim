@@ -23,10 +23,37 @@ List outdated packages in go.mod file
 GoPkgsCheckShow
 ```
 
+Update outdated package currently under cursor in go.mod file
+
+```
+GoPkgsCheckUpdate
+```
+
 Clear list with
 
 ```
 GoPkgsCheckClear
+```
+
+## Config for lazyvim
+
+Config containing keymaps for the commands
+
+```
+return {
+  {
+    "sukhjit/go-pkgs-check.nvim",
+    config = function()
+      local gpc = require "GoPkgsCheck"
+
+      gpc.setup()
+
+      vim.keymap.set("n", "<Leader>cps", gpc.show, { desc = "[Code] [P]ackage [S]how" })
+      vim.keymap.set("n", "<Leader>cpu", gpc.update, { desc = "[Code] [P]ackage [U]pdate" })
+      vim.keymap.set("n", "<Leader>cpc", gpc.clear, { desc = "[Code] [P]ackage [C]lear" })
+    end,
+  },
+}
 ```
 
 ### Resource for creating this plugin
